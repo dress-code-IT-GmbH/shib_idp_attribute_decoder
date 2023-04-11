@@ -1,0 +1,37 @@
+<DataConnector id="decryptedBpkDc" xsi:type="HTTP"
+    httpClientRef="ResolverNonCachingHttpClient">
+    <InputDataConnector ref="static_bpk_enc_test" attributeNames="STATIC_BPK_ENC_TEST_ATTR" />
+
+    <URLTemplate>
+        <![CDATA[
+            http://127.0.1.15:8167/decrypt
+        ]]>
+      </URLTemplate>
+    <BodyTemplate MIMEType="application/x-www-form-urlencoded">
+        {
+        "c": "base64OeapSha1",
+        "ctxt": "$STATIC_BPK_ENC_TEST_ATTR.get(0)"
+        }
+    </BodyTemplate>
+    <ResponseMapping>
+        <Script>
+        <![CDATA[
+        // logger = Java.type("org.slf4j.LoggerFactory").getLogger("net.shibboleth.idp.attribute.resolver.dc.http.custom"); 
+        var HashSet = Java.type("java.util.HashSet");
+        var HttpClientSupport = Java.type("net.shibboleth.utilities.java.support.httpclient.HttpClientSupport");
+        var IdPAttribute = Java.type("net.shibboleth.idp.attribute.IdPAttribute");
+        var StringAttributeValue = Java.type("net.shibboleth.idp.attribute.StringAttributeValue");
+ 
+        // Limits length to 64k
+        var body = HttpClientSupport.toString(response.getEntity(), "UTF-8", 65536);
+        // logger.debug(body);
+        var result = JSON.parse(body);
+        var attr = new IdPAttribute("BPK_DECRYPTED");
+        var values = new HashSet();
+        values.add(new StringAttributeValue(result.Txt));
+        attr.setValues(values);
+        connectorResults.add(attr);
+        ]]>
+        </Script>
+    </ResponseMapping>
+</DataConnector>
